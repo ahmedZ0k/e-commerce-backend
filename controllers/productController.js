@@ -8,24 +8,23 @@ const ApiError = require('../utils/ApiError');
 // @access  Puplic
 
 exports.getAllProducts = asyncHandler(async (req, res) => {
-  // Filtering
-  const queryStringObj = { ...req.query };
-  const excludesFields = ['page', 'sort', 'limit', 'fields'];
-  excludesFields.forEach(field => delete queryStringObj[field]);
-
-  let queryStr = JSON.stringify(queryStringObj);
-  queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
+  // Search
+  let mongooseQuery;
+  if (req.query.keyword) {
+    const query = {};
+    query.$or = [
+      { title: { $regex: req.query.keyword, $options: 'i' } },
+      { description: { $regex: req.query.keyword, $options: 'i' } },
+    ];
+    mongooseQuery = Product.find(query);
+  }
 
   // Pagination
   const page = req.query.page * 1 || 1;
   const limit = req.query.limit * 1 || 50;
   const skip = (page - 1) * limit;
 
-  // Build query
-  let mongooseQuery = Product.find(JSON.parse(queryStr))
-    .skip(skip)
-    .limit(limit)
-    .populate({ path: 'category', select: 'name' });
+  mongooseQuery = mongooseQuery.skip(skip).limit(limit);
 
   // Sorting
   if (req.query.sort) {
@@ -34,6 +33,17 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
   } else {
     mongooseQuery = mongooseQuery.sort('-sold');
   }
+
+  // Fields Limiting
+  if (req.query.fields) {
+    const fields = req.query.fields.split(',').join(' ');
+    mongooseQuery = mongooseQuery.select(fields);
+  } else {
+    mongooseQuery = mongooseQuery.select('-__v');
+  }
+
+  // Populate category
+  mongooseQuery = mongooseQuery.populate({ path: 'category', select: 'name' });
 
   // Execute query
   const products = await mongooseQuery;

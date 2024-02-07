@@ -2,56 +2,25 @@ const slugify = require('slugify');
 const asyncHandler = require('express-async-handler');
 const Product = require('../models/productModel');
 const ApiError = require('../utils/ApiError');
+const ApiFeatures = require('../utils/apiFeatures');
 
 // @desc    Get all products
 // @route   GET /api/products
 // @access  Puplic
 
 exports.getAllProducts = asyncHandler(async (req, res) => {
-  // Search
-  let mongooseQuery;
-  if (req.query.keyword) {
-    const query = {};
-    query.$or = [
-      { title: { $regex: req.query.keyword, $options: 'i' } },
-      { description: { $regex: req.query.keyword, $options: 'i' } },
-    ];
-    mongooseQuery = Product.find(query);
-  }
-
-  // Pagination
-  const page = req.query.page * 1 || 1;
-  const limit = req.query.limit * 1 || 50;
-  const skip = (page - 1) * limit;
-
-  mongooseQuery = mongooseQuery.skip(skip).limit(limit);
-
-  // Sorting
-  if (req.query.sort) {
-    const sortBy = req.query.sort.split(',').join(' ');
-    mongooseQuery = mongooseQuery.sort(sortBy);
-  } else {
-    mongooseQuery = mongooseQuery.sort('-sold');
-  }
-
-  // Fields Limiting
-  if (req.query.fields) {
-    const fields = req.query.fields.split(',').join(' ');
-    mongooseQuery = mongooseQuery.select(fields);
-  } else {
-    mongooseQuery = mongooseQuery.select('-__v');
-  }
-
-  // Populate category
-  mongooseQuery = mongooseQuery.populate({ path: 'category', select: 'name' });
-
-  // Execute query
-  const products = await mongooseQuery;
+  const apiFeatures = new ApiFeatures(Product.find(), req.query)
+    .paginate()
+    .filter()
+    .limitFields()
+    .sort()
+    .search();
+  const products = await apiFeatures.mongooseQuery;
 
   res.status(200).json({
     status: 'success',
     length: products.length,
-    page,
+    // page,
     data: { products },
   });
 });

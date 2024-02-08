@@ -1,3 +1,4 @@
+const { default: slugify } = require('slugify');
 const { check } = require('express-validator');
 const validatorMiddleware = require('../../middlewares/validatorMiddleware');
 const Category = require('../../models/categoryModel');
@@ -13,7 +14,11 @@ exports.createProductValidator = [
     .notEmpty()
     .withMessage('Product name required')
     .isLength({ min: 3 })
-    .withMessage('too short Product name'),
+    .withMessage('too short Product name')
+    .custom((value, { req }) => {
+      req.body.slug = slugify(value);
+      return true;
+    }),
   check('description')
     .notEmpty()
     .withMessage('Description is required')
@@ -60,7 +65,7 @@ exports.createProductValidator = [
         throw new Error(`No Category found with id: ${value}`);
       }
     }),
-  // BUG: SubCategory CUSTOM validation is not working
+
   check('subcategories')
     .optional()
     .isMongoId()
@@ -106,6 +111,12 @@ exports.createProductValidator = [
 
 exports.updateProductValidator = [
   check('id').isMongoId().withMessage('Invalid Product Id'),
+  check('title')
+    .optional()
+    .custom((value, { req }) => {
+      req.body.slug = slugify(value);
+      return true;
+    }),
   validatorMiddleware,
 ];
 

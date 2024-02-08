@@ -10,8 +10,46 @@ class ApiFeatures {
     excludesFields.forEach(field => delete queryObj[field]);
 
     let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
+    queryStr = queryStr.replace(
+      /\b(gte|gt|lte|lt|ne)\b/g,
+      match => `$${match}`,
+    );
     this.mongooseQuery = this.mongooseQuery.find(JSON.parse(queryStr));
+
+    return this;
+  }
+
+  search(modelName) {
+    if (this.queryStr.keyword) {
+      const query = {};
+      if (modelName === 'Product') {
+        query.$or = [
+          {
+            title: { $regex: this.queryStr.keyword, $options: 'i' },
+          },
+          {
+            description: {
+              $regex: this.queryStr.keyword,
+              $options: 'i',
+            },
+          },
+        ];
+      } else {
+        query.$or = [
+          {
+            name: { $regex: this.queryStr.keyword, $options: 'i' },
+          },
+          {
+            description: {
+              $regex: this.queryStr.keyword,
+              $options: 'i',
+            },
+          },
+        ];
+      }
+
+      this.mongooseQuery = this.mongooseQuery.find(query);
+    }
 
     return this;
   }
@@ -36,33 +74,18 @@ class ApiFeatures {
     return this;
   }
 
-  search() {
-    if (this.queryStr.keyword) {
-      const query = {};
-      query.$or = [
-        {
-          title: { $regex: this.queryStr.keyword, $options: 'i' },
-        },
-        {
-          description: {
-            $regex: this.queryStr.keyword,
-            $options: 'i',
-          },
-        },
-      ];
-      this.mongooseQuery = this.mongooseQuery.find(query);
-    }
-
-    return this;
-  }
-
   paginate() {
     const page = this.queryStr.page * 1 || 1;
     const limit = this.queryStr.limit * 1 || 50;
     const skip = (page - 1) * limit;
 
+    const pagination = {};
+    pagination.limit = limit;
+    pagination.currentPage = page;
+
     this.mongooseQuery = this.mongooseQuery.skip(skip).limit(limit);
 
+    this.paginationResult = pagination;
     return this;
   }
 }

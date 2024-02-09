@@ -2,15 +2,21 @@ const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/ApiError');
 const ApiFeatures = require('../utils/apiFeatures');
 
-exports.deleteOne = Model =>
+exports.deleteOne = (Model, modelName = '') =>
   asyncHandler(async (req, res, next) => {
     const { id } = req.params;
-    const document = await Model.findByIdAndDelete(id);
 
-    if (!document) {
-      return next(new ApiError(`No document for this id ${id}`, 404));
+    if (modelName === 'User') {
+      const document = await Model.findByIdAndUpdate(id, { active: false });
+      if (!document) {
+        return next(new ApiError(`No document for this id ${id}`, 404));
+      }
+    } else {
+      const document = await Model.findByIdAndDelete(id);
+      if (!document) {
+        return next(new ApiError(`No document for this id ${id}`, 404));
+      }
     }
-
     res.status(204).json({ status: 'success' });
   });
 

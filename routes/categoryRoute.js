@@ -15,6 +15,8 @@ const {
   deleteCategory,
 } = require('../controllers/categoryController');
 
+const { protect } = require('../controllers/authController');
+
 const subCategoryRoute = require('./subCategoryRoute');
 
 const router = express.Router();
@@ -23,7 +25,7 @@ router.use('/:categoryId/subcategories', subCategoryRoute);
 router
   .route('/')
   .get(getAllCategories)
-  .post(createCategoryValidator, createCategory);
+  .post(protect, createCategoryValidator, createCategory);
 
 router
   .route('/:id')

@@ -15,14 +15,29 @@ const {
   deleteBrand,
 } = require('../controllers/brandController');
 
+const { protect, allowedTo } = require('../controllers/authController');
+
 const router = express.Router();
 
-router.route('/').get(getAllBrands).post(createBrandValidator, createBrand);
+router
+  .route('/')
+  .get(getAllBrands)
+  .post(
+    protect,
+    allowedTo('admin', 'manager'),
+    createBrandValidator,
+    createBrand,
+  );
 
 router
   .route('/:id')
   .get(getBrandValidator, getBrand)
-  .patch(updateBrandValidator, updateBrand)
-  .delete(deleteBrandValidator, deleteBrand);
+  .patch(
+    protect,
+    allowedTo('admin', 'manager'),
+    updateBrandValidator,
+    updateBrand,
+  )
+  .delete(protect, allowedTo('admin'), deleteBrandValidator, deleteBrand);
 
 module.exports = router;

@@ -15,6 +15,8 @@ const {
   deleteProduct,
 } = require('../controllers/productController');
 
+const { protect, allowedTo } = require('../controllers/authController');
+
 const subCategoryRoute = require('./subCategoryRoute');
 
 const router = express.Router();
@@ -23,12 +25,22 @@ router.use('/:categoryId/subcategories', subCategoryRoute);
 router
   .route('/')
   .get(getAllProducts)
-  .post(createProductValidator, createProduct);
+  .post(
+    protect,
+    allowedTo('admin', 'manager'),
+    createProductValidator,
+    createProduct,
+  );
 
 router
   .route('/:id')
   .get(getProductValidator, getProduct)
-  .patch(updateProductValidator, updateProduct)
-  .delete(deleteProductValidator, deleteProduct);
+  .patch(
+    protect,
+    allowedTo('admin', 'manager'),
+    updateProductValidator,
+    updateProduct,
+  )
+  .delete(protect, allowedTo('admin'), deleteProductValidator, deleteProduct);
 
 module.exports = router;

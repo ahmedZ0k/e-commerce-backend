@@ -2,21 +2,15 @@ const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/ApiError');
 const ApiFeatures = require('../utils/apiFeatures');
 
-exports.deleteOne = (Model, modelName = '') =>
+exports.deleteOne = Model =>
   asyncHandler(async (req, res, next) => {
     const { id } = req.params;
 
-    if (modelName === 'User') {
-      const document = await Model.findByIdAndUpdate(id, { active: false });
-      if (!document) {
-        return next(new ApiError(`No document for this id ${id}`, 404));
-      }
-    } else {
-      const document = await Model.findByIdAndDelete(id);
-      if (!document) {
-        return next(new ApiError(`No document for this id ${id}`, 404));
-      }
+    const document = await Model.findById(id);
+    if (!document) {
+      return next(new ApiError(`No document for this id ${id}`, 404));
     }
+    await document.deleteOne();
     res.status(204).json({ status: 'success' });
   });
 
@@ -28,9 +22,10 @@ exports.updateOne = Model =>
 
     if (!document) {
       return next(
-        new ApiError(`No document for this id ${req.params.id}`, 404),
+        new ApiError(`No document found for this id ${req.params.id}`, 404),
       );
     }
+    document.save();
     res.status(200).json({ status: 'success', data: document });
   });
 
@@ -40,12 +35,15 @@ exports.createOne = Model =>
     res.status(201).json({ status: 'success', data: newDoc });
   });
 
-exports.getOne = Model =>
+exports.getOne = (Model, populateOpt) =>
   asyncHandler(async (req, res, next) => {
     const { id } = req.params;
 
-    const document = await Model.findById(id);
-
+    const query = Model.findById(id);
+    if (populateOpt) {
+      query.populate(populateOpt);
+    }
+    const document = await query;
     if (!document) {
       return next(new ApiError(`No document for this id ${id}`, 404));
     }

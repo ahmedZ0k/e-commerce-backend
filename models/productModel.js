@@ -1,13 +1,13 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema(
   {
     title: {
       type: String,
-      required: [true, 'Title is required'],
+      required: [true, "Title is required"],
       trim: true,
-      minLength: [3, 'Title must be at least 3 characters long'],
-      maxLength: [100, 'Title must be at most 100 characters long'],
+      minLength: [3, "Title must be at least 3 characters long"],
+      maxLength: [100, "Title must be at most 100 characters long"],
     },
     slug: {
       type: String,
@@ -16,15 +16,15 @@ const productSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: [true, 'Description is required'],
+      required: [true, "Description is required"],
       trim: true,
-      minLength: [20, 'Description must be at least 20 characters long'],
-      maxLength: [1000, 'Description must be at most 1000 characters long'],
+      minLength: [20, "Description must be at least 20 characters long"],
+      maxLength: [1000, "Description must be at most 1000 characters long"],
     },
     quantity: {
       type: Number,
-      required: [true, 'Quantity is required'],
-      min: [1, 'Quantity must be at least 1'],
+      required: [true, "Quantity is required"],
+      min: [1, "Quantity must be at least 1"],
     },
     sold: {
       type: Number,
@@ -33,8 +33,8 @@ const productSchema = new mongoose.Schema(
     price: {
       type: Number,
       trim: true,
-      required: [true, 'Price is required'],
-      max: [200000, 'Price must be at most 20 characters long'],
+      required: [true, "Price is required"],
+      max: [200000, "Price must be at most 20 characters long"],
     },
     priceAfterDiscount: {
       type: Number,
@@ -44,44 +44,76 @@ const productSchema = new mongoose.Schema(
     },
     imageCover: {
       type: String,
-      required: [true, 'Image cover is required'],
+      required: [true, "Image cover is required"],
     },
     images: {
       type: [String],
     },
     category: {
       type: mongoose.Schema.ObjectId,
-      ref: 'Category',
-      required: [true, 'Category is required'],
+      ref: "Category",
+      required: [true, "Category is required"],
     },
     subcategories: [
       {
         type: mongoose.Schema.ObjectId,
-        ref: 'SubCategory',
+        ref: "SubCategory",
       },
     ],
     brand: {
       type: mongoose.Schema.ObjectId,
-      ref: 'Brand',
+      ref: "Brand",
     },
     ratingsAverage: {
       type: Number,
-      default: 4.5,
-      min: [1, 'Rating must be at least 1'],
-      max: [5, 'Rating must be at most 5'],
-      set: val => Math.round(val * 10) / 10,
+      min: [1, "Rating must be at least 1"],
+      max: [5, "Rating must be at most 5"],
+      set: (val) => Math.round(val * 10) / 10,
     },
     ratingsQuantity: {
       type: Number,
       default: 0,
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
 
 productSchema.pre(/^find/, function (next) {
-  this.populate({ path: 'category', select: 'name' });
+  this.populate({ path: "category", select: "name" });
   next();
 });
 
-module.exports = mongoose.model('Product', productSchema);
+const setImageUrl = (doc) => {
+  if (doc.imageCover) {
+    const imageUrl = `${process.env.BASE_URL}/products/${doc.imageCover}`;
+    doc.imageCover = imageUrl;
+  }
+  if (doc.images) {
+    const imagesList = [];
+    doc.images.forEach((img) => {
+      const imageUrl = `${process.env.BASE_URL}/products/${img}`;
+      imagesList.push(imageUrl);
+    });
+    doc.images = imagesList;
+  }
+};
+
+productSchema.post("init", (doc) => {
+  setImageUrl(doc);
+});
+
+productSchema.post("save", (doc) => {
+  setImageUrl(doc);
+});
+
+productSchema.virtual("reviews", {
+  ref: "Review",
+  foreignField: "product",
+  localField: "_id",
+});
+
+module.exports = mongoose.model("Product", productSchema);

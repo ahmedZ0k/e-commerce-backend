@@ -13,6 +13,8 @@ const {
   createBrand,
   updateBrand,
   deleteBrand,
+  uploadBrandImage,
+  resizeImage,
 } = require('../controllers/brandController');
 
 const { protect, allowedTo } = require('../controllers/authController');
@@ -25,6 +27,8 @@ router
   .post(
     protect,
     allowedTo('admin', 'manager'),
+    uploadBrandImage,
+    resizeImage,
     createBrandValidator,
     createBrand,
   );
@@ -35,6 +39,8 @@ router
   .patch(
     protect,
     allowedTo('admin', 'manager'),
+    uploadBrandImage,
+    resizeImage,
     updateBrandValidator,
     updateBrand,
   )

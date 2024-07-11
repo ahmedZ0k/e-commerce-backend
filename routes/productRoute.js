@@ -13,21 +13,26 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
+  uploadProductImages,
+  resizeProductImage,
 } = require('../controllers/productController');
 
 const { protect, allowedTo } = require('../controllers/authController');
 
-const subCategoryRoute = require('./subCategoryRoute');
+const reviewRoute = require('./reviewRoute');
 
 const router = express.Router();
 
-router.use('/:categoryId/subcategories', subCategoryRoute);
+router.use('/:productId/reviews', reviewRoute);
+
 router
   .route('/')
   .get(getAllProducts)
   .post(
     protect,
     allowedTo('admin', 'manager'),
+    uploadProductImages,
+    resizeProductImage,
     createProductValidator,
     createProduct,
   );

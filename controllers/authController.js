@@ -53,7 +53,7 @@ exports.login = expressAsyncHandler(async (req, res, next) => {
   }
   const token = generateToken({ userId: user._id });
 
-  res.status(200).json({ token, data: user });
+  res.status(200).json({status:'ok', token, data: user });
 });
 
 // @desc    (Authentication) make sure the user is logged in
